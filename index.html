@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile WebSocket Client</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>WebSocket Chat</h1>
+        <div class="connection-settings">
+            <input type="text" id="nicknameInput" placeholder="Your Nickname" value="Guest" autocomplete="off">
+            <input type="text" id="websocketUrlInput" placeholder="WebSocket URL (e.g., wss://your-replit.repl.co)" value="wss://" autocomplete="off">
+            <button id="connectButton">Connect</button>
+        </div>
+        <div id="messages" class="messages"></div>
+        <form id="messageForm" class="message-form">
+            <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off">
+            <button type="submit">Send</button>
+        </form>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
