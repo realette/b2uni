@@ -199,24 +199,24 @@ function connectWebSocket() {
 
     ws.onmessage = (event) => {
         try {
-            const messageData = JSON.parse(event.data);
+            const messageData = JSON.parse(event.data.trim()); // Added .trim()
+            console.log('[Debug]', 'Received message type:', messageData.type, ' (typeof ', typeof messageData.type, ')'); // Debug log
             switch (messageData.type) {
                 case 'chat':
+                    // --- DEBUGGING LOG ---
+                    console.log('--- Mention Notification Check ---');
+                    console.log('Received mentions:', messageData.mentions);
+                    console.log('My current nickname:', myNickname);
+                    console.log('Is my nickname in mentions?:', messageData.mentions ? messageData.mentions.includes(myNickname) : 'N/A');
+                    console.log('Is document focused?:', document.hasFocus());
+                    console.log('Notification permission:', Notification.permission);
+                    // --- END DEBUGGING LOG ---
+
                     if (messageData.mentions && messageData.mentions.includes(myNickname)) {
                         showNotification(`Mention from ${messageData.sender}`, messageData.content);
                     }
                     appendMessage(messageData.sender, messageData.content, messageData.type, messageData.timestamp, messageData.mentions);
                     break;
-                case 'system': appendMessage(null, messageData.content, messageData.type, messageData.timestamp); break;
-                case 'user_list': updateUserList(messageData.users); break;
-                case 'user_typing': if (messageData.nickname !== myNickname) typingUsers.add(messageData.nickname); updateTypingIndicator(); break;
-                case 'user_stopped_typing': if (messageData.nickname !== myNickname) typingUsers.delete(messageData.nickname); updateTypingIndicator(); break;
-                default: appendMessage('Server', event.data, 'received');
-            }
-        } catch (e) {
-            appendMessage('Server', event.data, 'received');
-        }
-    };
 
     const handleDisconnect = (error) => {
         console.log(error ? `WebSocket error: ${error}` : 'Disconnected from WebSocket server.');
