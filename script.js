@@ -248,7 +248,7 @@ messageForm.addEventListener('submit', (e) => {
     if (!message) return;
     if (message.startsWith('/')) { handleSlashCommand(message); return; }
     if (ws && ws.readyState === WebSocket.OPEN) {
-        const mentions = [...message.matchAll(/@(\w+)/g)].map(match => match[1]);
+        const mentions = [...message.matchAll(/@([\w#]+)/g)].map(match => match[1]);
         ws.send(JSON.stringify({ type: 'chat', content: message, mentions: mentions }));
         clearTimeout(typingTimer);
         isTyping = false;
