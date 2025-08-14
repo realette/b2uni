@@ -1,6 +1,7 @@
 const messagesDiv = document.getElementById('messages');
 const messageForm = document.getElementById('messageForm');
 const messageInput = document.getElementById('messageInput');
+const mainTitle = document.getElementById('mainTitle'); // Get the title element
 
 // WebSocket 서버 주소를 여기에 입력하세요.
 // 예: ws://localhost:8765 또는 wss://your-server.com/ws
@@ -52,6 +53,7 @@ const messageFormDiv = document.getElementById('messageForm');
         connectionStatusDiv.style.color = 'green';
         connectionSettingsDiv.style.display = 'none'; // Hide connection settings
         messageFormDiv.style.display = 'flex'; // Show message form
+        mainTitle.style.display = 'none'; // Hide the main title
         appendMessage('System', `Connected to ${url}` , 'received');
         localStorage.setItem('websocketUrl', url); // Save URL to localStorage
         localStorage.setItem('nickname', nickname); // Save nickname to localStorage
@@ -92,6 +94,7 @@ const messageFormDiv = document.getElementById('messageForm');
         connectionStatusDiv.style.color = 'red';
         connectionSettingsDiv.style.display = 'flex'; // Show connection settings
         messageFormDiv.style.display = 'none'; // Hide message form
+        mainTitle.style.display = 'block'; // Show the main title
         appendMessage('System', 'Disconnected from server.', 'received');
         // No automatic reconnect here, user needs to click connect again
     };
@@ -102,6 +105,7 @@ const messageFormDiv = document.getElementById('messageForm');
         connectionStatusDiv.style.color = 'orange';
         connectionSettingsDiv.style.display = 'flex'; // Show connection settings
         messageFormDiv.style.display = 'none'; // Hide message form
+        mainTitle.style.display = 'block'; // Show the main title
         appendMessage('System', 'WebSocket error occurred. Check console for details.', 'received');
         ws.close(); 
     };
@@ -166,6 +170,7 @@ messageForm.addEventListener('submit', (e) => {
             appendMessage('System', '사용할 닉네임을 입력해주세요. 예: /nick 새로운닉네임', 'received');
         }
         messageInput.value = '';
+        messageInput.focus(); // Keep keyboard open
         return;
     }
 
@@ -177,9 +182,14 @@ messageForm.addEventListener('submit', (e) => {
         });
         ws.send(messageToSend);
         messageInput.value = '';
+        messageInput.focus(); // Keep keyboard open
     } else if (!ws || ws.readyState !== WebSocket.OPEN) {
         appendMessage('System', 'Not connected to server. Please connect first.', 'received');
     }
 });
 
 connectButton.addEventListener('click', connectWebSocket);
+
+
+// Global variable to store my nickname
+let myNickname = nicknameInput.value;
