@@ -166,6 +166,15 @@ function connectWebSocket() {
             const messageData = JSON.parse(event.data);
             switch (messageData.type) {
                 case 'chat':
+                    // --- DEBUGGING LOG ---
+                    console.log('--- Mention Notification Check ---');
+                    console.log('Received mentions:', messageData.mentions);
+                    console.log('My current nickname:', myNickname);
+                    console.log('Is my nickname in mentions?:', messageData.mentions ? messageData.mentions.includes(myNickname) : 'N/A');
+                    console.log('Is document focused?:', document.hasFocus());
+                    console.log('Notification permission:', Notification.permission);
+                    // --- END DEBUGGING LOG ---
+
                     if (messageData.mentions && messageData.mentions.includes(myNickname)) {
                         showNotification(`Mention from ${messageData.sender}`, messageData.content);
                     }
