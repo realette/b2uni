@@ -20,6 +20,7 @@ body {
     display: flex;
     flex-direction: column;
     height: 90vh; /* Adjust for mobile view */
+    position: relative; /* For positioning controls */
 }
 
 h1 {
@@ -166,4 +167,89 @@ h1 {
     left: 50%;
     transform: translateX(-50%);
     bottom: 0;
+}
+
+/* --- Theme Switcher --- */
+.controls-container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+}
+
+#theme-toggle {
+    background: none;
+    border: 1px solid #ccc;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    font-size: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s, color 0.3s, transform 0.3s;
+}
+
+#theme-toggle:hover {
+    transform: scale(1.1);
+}
+
+/* --- Dark Mode --- */
+body.dark-mode {
+    background-color: #121212;
+    color: #e0e0e0;
+}
+
+body.dark-mode .container {
+    background-color: #1e1e1e;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode h1,
+body.dark-mode #connectionStatus {
+    color: #e0e0e0;
+}
+
+body.dark-mode .connection-settings input[type="text"],
+body.dark-mode .message-form input[type="text"] {
+    background-color: #333;
+    color: #e0e0e0;
+    border-color: #555;
+}
+
+body.dark-mode .connection-settings button {
+    background-color: #3a9e5d; /* Darker green */
+}
+
+body.dark-mode .message-form button {
+    background-color: #367dc4; /* Darker blue */
+}
+
+body.dark-mode .messages {
+    background-color: #2a2a2a;
+    border-color: #444;
+}
+
+body.dark-mode .my-message .message-content {
+    background-color: #054740; /* Dark green */
+    color: #e0e0e0;
+}
+
+body.dark-mode .other-message .message-content {
+    background-color: #3a3a3a; /* Dark gray */
+    color: #e0e0e0;
+}
+
+body.dark-mode .system-message {
+    color: #aaa;
+}
+
+body.dark-mode .timestamp {
+    color: #aaa;
+}
+
+body.dark-mode #theme-toggle {
+    background-color: #333;
+    border-color: #555;
+    color: #fff;
 }

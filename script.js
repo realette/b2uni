@@ -2,6 +2,7 @@ const messagesDiv = document.getElementById('messages');
 const messageForm = document.getElementById('messageForm');
 const messageInput = document.getElementById('messageInput');
 const mainTitle = document.getElementById('mainTitle'); // Get the title element
+const themeToggle = document.getElementById('theme-toggle');
 
 // WebSocket 서버 주소를 여기에 입력하세요.
 // 예: ws://localhost:8765 또는 wss://your-server.com/ws
@@ -10,6 +11,32 @@ const connectButton = document.getElementById('connectButton');
 const nicknameInput = document.getElementById('nicknameInput');
 
 let ws;
+
+// --- THEME SWITCHER LOGIC ---
+function setTheme(theme) {
+    if (theme === 'dark') {
+        document.body.classList.add('dark-mode');
+        themeToggle.textContent = '☀️';
+    } else {
+        document.body.classList.remove('dark-mode');
+        themeToggle.textContent = '🌙';
+    }
+}
+
+themeToggle.addEventListener('click', () => {
+    const currentTheme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    localStorage.setItem('theme', newTheme);
+    setTheme(newTheme);
+});
+
+// Apply saved theme on load
+(function () {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    setTheme(savedTheme);
+})();
+// --- END THEME SWITCHER ---
+
 
 // Load URL and Nickname from localStorage or set a default
 const savedUrl = localStorage.getItem('websocketUrl');
