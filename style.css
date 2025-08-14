@@ -104,32 +104,34 @@ h1 {
 
 /* Consolidated styling for messages */
 .message {
-    padding: 0; /* Set to 0 or adjust as needed */
+    padding: 0; /* Padding moved to .message-content */
     border-radius: 15px;
     max-width: 70%;
-    word-wrap: break-word;
-    word-break: break-word;
-    overflow-wrap: break-word; /* Add this for even more robust breaking */
-    position: relative; /* For timestamp positioning */
-    /* Ensure visibility */
-    color: #333; /* Dark text color */
-    box-sizing: border-box; /* Include padding and border in the element's total width and height */
-    min-height: 30px; /* Ensure message elements have some height */
-    line-height: 1.4; /* Add this for better line spacing */
+    color: #333;
+    box-sizing: border-box;
+    min-height: 30px;
+    line-height: 1.4;
     display: flex; /* Make .message a flex container */
     flex-direction: column; /* Stack content and timestamp */
-    align-items: flex-start; /* Default alignment */
+    align-items: flex-start; /* Default alignment for content */
+    position: relative; /* For timestamp positioning */
+    /* Background colors will be set by .my-message or .other-message */
 }
 
 .message-content {
-    padding: 8px 12px;
-    word-wrap: break-word; /* Keep for compatibility */
+    padding: 8px 12px; /* Padding for the text content */
+    padding-bottom: 18px; /* Extra padding at the bottom for timestamp */
+    word-wrap: break-word;
     word-break: break-all; /* More aggressive breaking */
-    overflow-wrap: break-word; /* Keep for compatibility */
-    /* Ensure it takes up available space within .message */
-    flex-grow: 1; /* If .message becomes a flex container */
-    min-width: 0; /* Prevent flex item from overflowing */
-    max-width: 100%; /* Ensure it doesn't exceed its parent's width */
+    overflow-wrap: break-word;
+    flex-grow: 1;
+    min-width: 0; /* Allow shrinking */
+    max-width: 100%; /* Constrain to parent */
+    /* Ensure text wraps normally */
+    white-space: normal;
+    /* For debugging, if still overflowing, uncomment these: */
+    /* overflow: hidden; */
+    /* text-overflow: ellipsis; */
 }
 
 .system-message {
@@ -137,6 +139,9 @@ h1 {
     font-style: italic;
     color: #888;
     margin: 0; /* Ensure no extra margins interfere with gap */
+    /* System messages don't have .message-content, so they need their own padding */
+    padding: 8px 12px;
+    padding-bottom: 18px; /* Space for timestamp */
 }
 
 /* Styling for messages sent by the current user */
