@@ -63,16 +63,16 @@ const connectionStatusDiv = document.getElementById('connectionStatus');
         console.log('Message from server:', event.data);
         try {
             const messageData = JSON.parse(event.data);
-            if (data.type === 'chat') {
-            appendMessage(data.sender, data.content, data.type, data.timestamp);
-        } else if (data.type === 'system') {
-            if (data.content.startsWith('환영합니다,')) { // Check for welcome message
-                myNickname = data.content.split(',')[1].split('님!')[0].trim();
-                console.log('My nickname is:', myNickname); // For debugging
-            }
-            appendMessage(null, data.content, data.type, data.timestamp); // System messages don't have a sender
-        }
-                // Fallback for unknown types
+
+            if (messageData.type === 'chat') {
+                appendMessage(messageData.sender, messageData.content, messageData.type, messageData.timestamp);
+            } else if (messageData.type === 'system') {
+                if (messageData.content.startsWith('환영합니다,')) {
+                    myNickname = messageData.content.split(',')[1].split('님!')[0].trim();
+                    console.log('My nickname is:', myNickname);
+                }
+                appendMessage(null, messageData.content, messageData.type, messageData.timestamp);
+            } else { // Fallback for unknown types
                 appendMessage('Server', event.data, 'received');
             }
         } catch (e) {
