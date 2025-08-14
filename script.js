@@ -109,8 +109,10 @@ function appendMessage(sender, content, type = 'chat', timestamp = null) {
         timestampStr = `<span class="timestamp">${date.toLocaleTimeString()}</span>`;
     }
 
+    let messageHtml = ''; // Declare a variable to hold the HTML string
+
     if (type === 'chat') {
-        messageElement.innerHTML = `<strong>${sender}:</strong> ${content} ${timestampStr}`;
+        messageHtml = `<strong>${sender}:</strong> ${content} ${timestampStr}`;
         if (sender === myNickname) {
             messageElement.classList.add('my-message');
         } else {
@@ -118,8 +120,10 @@ function appendMessage(sender, content, type = 'chat', timestamp = null) {
         }
     } else if (type === 'system') {
         messageElement.classList.add('system-message');
-        messageElement.innerHTML = `<em>${content}</em> ${timestampStr}`;
+        messageHtml = `<em>${content}</em> ${timestampStr}`;
     }
+    messageElement.innerHTML = messageHtml; // Assign the HTML string
+    console.log('Appending message:', { sender, content, type, timestamp, messageHtml, innerHTML: messageElement.innerHTML }); // <--- ADD THIS LOG
     messagesDiv.appendChild(messageElement);
     messagesDiv.scrollTop = messagesDiv.scrollHeight; // Auto-scroll to bottom
 }

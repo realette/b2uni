@@ -124,14 +124,14 @@ h1 {
 
 /* Styling for messages sent by the current user */
 .my-message {
-    background-color: #dcf8c6; /* Light green */
+    background-color: #dcf8c6 !important; /* Light green */
     align-self: flex-end; /* Align to the right */
     margin-left: auto; /* Push to the right */
 }
 
 /* Styling for messages sent by others */
 .other-message {
-    background-color: #e0e0e0; /* Light gray */
+    background-color: #e0e0e0 !important; /* Light gray */
     align-self: flex-start; /* Align to the left */
     margin-right: auto; /* Push to the left */
 }
