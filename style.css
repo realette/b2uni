@@ -196,6 +196,7 @@ h1 {
 
 /* --- User List --- */
 #user-list-container {
+    display: none; /* Initially hidden */
     border: 1px solid #ddd;
     border-radius: 4px;
     padding: 5px 10px;
