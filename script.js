@@ -16,6 +16,36 @@ const recentConnectionsContainer = document.getElementById('recent-connections-c
 
 let ws;
 let myNickname = nicknameInput.value;
+let reconnectIntervalId = null;
+
+// --- AUTO RECONNECTION LOGIC ---
+function startReconnecting() {
+    if (reconnectIntervalId) return; // Don't start multiple timers
+    console.log('Starting reconnection attempts...');
+    reconnectIntervalId = setInterval(() => {
+        console.log('Attempting to reconnect...');
+        connectWebSocket();
+    }, 5000); // Try every 5 seconds
+}
+
+function stopReconnecting() {
+    if (reconnectIntervalId) {
+        console.log('Stopping reconnection attempts.');
+        clearInterval(reconnectIntervalId);
+        reconnectIntervalId = null;
+    }
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        if (ws && ws.readyState === WebSocket.CLOSED) {
+            console.log('Tab became visible, attempting to reconnect immediately.');
+            stopReconnecting(); // Stop any existing timer before trying immediately
+            connectWebSocket();
+        }
+    }
+});
+// --- END AUTO RECONNECTION ---
 
 // --- NOTIFICATION LOGIC ---
 function updateNotificationButton() {
@@ -23,11 +53,7 @@ function updateNotificationButton() {
         notificationToggle.style.display = 'none';
         return;
     }
-    if (Notification.permission === 'granted') {
-        notificationToggle.classList.add('enabled');
-    } else {
-        notificationToggle.classList.remove('enabled');
-    }
+    notificationToggle.classList.toggle('enabled', Notification.permission === 'granted');
 }
 
 function showNotification(title, body) {
@@ -40,9 +66,7 @@ function showNotification(title, body) {
 notificationToggle.addEventListener('click', () => {
     if (!('Notification' in window)) return;
     if (Notification.permission !== 'denied') {
-        Notification.requestPermission().then(permission => {
-            updateNotificationButton();
-        });
+        Notification.requestPermission().then(updateNotificationButton);
     }
 });
 // --- END NOTIFICATION LOGIC ---
@@ -141,16 +165,24 @@ function renderRecentConnections() {
 function connectWebSocket() {
     const url = websocketUrlInput.value;
     myNickname = nicknameInput.value;
-    if (!url || !myNickname) { appendMessage('System', 'Please enter a nickname and WebSocket URL.'); return; }
-    if (ws && ws.readyState === WebSocket.OPEN) ws.close();
+    if (!url || !myNickname) { return; } // Silently fail on auto-reconnect
+    
+    // Don't try to connect if already connecting or open
+    if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
+        return;
+    }
 
     const connectionStatusDiv = document.getElementById('connectionStatus');
+    connectionStatusDiv.textContent = 'Connecting...';
+    connectionStatusDiv.style.color = 'orange';
+
     const connectionSettingsDiv = document.querySelector('.connection-settings');
     const messageFormDiv = document.getElementById('messageForm');
 
     ws = new WebSocket(url.replace(/^http/, 'ws'));
 
     ws.onopen = () => {
+        stopReconnecting(); // Successfully connected, stop trying
         console.log('Connected to WebSocket server');
         connectionStatusDiv.textContent = 'Connected';
         connectionStatusDiv.style.color = 'green';
@@ -166,15 +198,6 @@ function connectWebSocket() {
             const messageData = JSON.parse(event.data);
             switch (messageData.type) {
                 case 'chat':
-                    // --- DEBUGGING LOG ---
-                    console.log('--- Mention Notification Check ---');
-                    console.log('Received mentions:', messageData.mentions);
-                    console.log('My current nickname:', myNickname);
-                    console.log('Is my nickname in mentions?:', messageData.mentions ? messageData.mentions.includes(myNickname) : 'N/A');
-                    console.log('Is document focused?:', document.hasFocus());
-                    console.log('Notification permission:', Notification.permission);
-                    // --- END DEBUGGING LOG ---
-
                     if (messageData.mentions && messageData.mentions.includes(myNickname)) {
                         showNotification(`Mention from ${messageData.sender}`, messageData.content);
                     }
@@ -201,7 +224,10 @@ function connectWebSocket() {
         typingUsers.clear();
         updateTypingIndicator();
         renderRecentConnections();
-        appendMessage('System', error ? 'WebSocket error occurred.' : 'Disconnected from server.');
+        if (!error) { // Only show system message on clean disconnect
+             appendMessage('System', 'Disconnected from server. Attempting to reconnect...');
+        }
+        startReconnecting();
     };
 
     ws.onclose = () => handleDisconnect(null);
@@ -235,9 +261,8 @@ function appendMessage(sender, content, type = 'chat', timestamp = null, mention
         messageContentDiv.classList.add('message-content');
         const messageText = document.createElement('span');
         
-        // Sanitize content before processing for mentions
         const sanitizedContent = document.createTextNode(content).textContent;
-        const highlightedContent = sanitizedContent.replace(/@(\w+)/g, (match, nickname) => {
+        const highlightedContent = sanitizedContent.replace(/@([\w#]+)/g, (match, nickname) => {
             const isSelf = nickname === myNickname;
             return `<span class="mention ${isSelf ? 'self-mention' : ''}">${match}</span>`;
         });
