@@ -7,11 +7,11 @@ const userListContainer = document.getElementById('user-list-container');
 const userList = document.getElementById('user-list');
 const userCount = document.getElementById('user-count');
 const typingIndicator = document.getElementById('typing-indicator');
-
-// WebSocket 서버 주소를 여기에 입력하세요.
 const websocketUrlInput = document.getElementById('websocketUrlInput');
 const connectButton = document.getElementById('connectButton');
 const nicknameInput = document.getElementById('nicknameInput');
+const recentConnectionsList = document.getElementById('recent-connections-list');
+const recentConnectionsContainer = document.getElementById('recent-connections-container');
 
 let ws;
 let myNickname = nicknameInput.value;
@@ -23,16 +23,10 @@ const typingUsers = new Set();
 
 function updateTypingIndicator() {
     if (typingUsers.size === 0) {
-        typingIndicator.textContent = '\xa0'; // Non-breaking space to maintain height
+        typingIndicator.textContent = '\xa0';
     } else {
         const users = Array.from(typingUsers);
-        if (users.length === 1) {
-            typingIndicator.textContent = `${users[0]} is typing...`;
-        } else if (users.length === 2) {
-            typingIndicator.textContent = `${users[0]} and ${users[1]} are typing...`;
-        } else {
-            typingIndicator.textContent = 'Several people are typing...';
-        }
+        typingIndicator.textContent = users.length === 1 ? `${users[0]} is typing...` : `${users.slice(0, 2).join(', ')} and others are typing...`;
     }
 }
 
@@ -46,155 +40,154 @@ messageInput.addEventListener('input', () => {
         typingTimer = setTimeout(() => {
             isTyping = false;
             ws.send(JSON.stringify({ type: 'typing_stop' }));
-        }, 2000); // 2 seconds
+        }, 2000);
     }
 });
 // --- END TYPING INDICATOR ---
 
 // --- THEME SWITCHER LOGIC ---
 function setTheme(theme) {
-    if (theme === 'dark') {
-        document.body.classList.add('dark-mode');
-        themeToggle.textContent = '☀️';
-    } else {
-        document.body.classList.remove('dark-mode');
-        themeToggle.textContent = '🌙';
-    }
+    document.body.classList.toggle('dark-mode', theme === 'dark');
+    themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
 }
 
 themeToggle.addEventListener('click', () => {
-    const currentTheme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    const newTheme = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
     localStorage.setItem('theme', newTheme);
     setTheme(newTheme);
 });
+// --- END THEME SWITCHER ---
 
-// Apply saved theme on load
+// --- RECENT CONNECTIONS LOGIC ---
+const MAX_RECENT_URLS = 3;
+
+function saveRecentUrl(url) {
+    let urls = JSON.parse(localStorage.getItem('recentUrls')) || [];
+    urls = urls.filter(u => u !== url);
+    urls.unshift(url);
+    localStorage.setItem('recentUrls', JSON.stringify(urls.slice(0, MAX_RECENT_URLS)));
+}
+
+function checkUrlStatus(url, statusDot) {
+    statusDot.className = 'status-dot pending';
+    const checkWs = new WebSocket(url);
+    let finished = false;
+    const timeout = setTimeout(() => {
+        if (finished) return;
+        finished = true;
+        statusDot.className = 'status-dot offline';
+        checkWs.close();
+    }, 4000);
+
+    checkWs.onopen = () => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timeout);
+        statusDot.className = 'status-dot online';
+        checkWs.close();
+    };
+    checkWs.onerror = () => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timeout);
+        statusDot.className = 'status-dot offline';
+    };
+}
+
+function renderRecentConnections() {
+    const urls = JSON.parse(localStorage.getItem('recentUrls')) || [];
+    recentConnectionsList.innerHTML = '';
+    if (urls.length === 0) {
+        recentConnectionsContainer.style.display = 'none';
+        return;
+    }
+    recentConnectionsContainer.style.display = 'block';
+    urls.forEach(url => {
+        const item = document.createElement('div');
+        item.className = 'recent-connection-item';
+        item.addEventListener('click', () => {
+            websocketUrlInput.value = url;
+        });
+        const statusDot = document.createElement('div');
+        const urlSpan = document.createElement('span');
+        urlSpan.className = 'recent-url';
+        urlSpan.textContent = url;
+        item.appendChild(statusDot);
+        item.appendChild(urlSpan);
+        recentConnectionsList.appendChild(item);
+        checkUrlStatus(url, statusDot);
+    });
+}
+// --- END RECENT CONNECTIONS ---
+
+// Initial Page Load Setup
 (function () {
     const savedTheme = localStorage.getItem('theme') || 'light';
     setTheme(savedTheme);
+    const savedUrl = localStorage.getItem('websocketUrl');
+    if (savedUrl) websocketUrlInput.value = savedUrl;
+    const savedNickname = localStorage.getItem('nickname');
+    if (savedNickname) nicknameInput.value = savedNickname;
+    renderRecentConnections();
 })();
-// --- END THEME SWITCHER ---
-
-
-// Load URL and Nickname from localStorage or set a default
-const savedUrl = localStorage.getItem('websocketUrl');
-if (savedUrl) {
-    websocketUrlInput.value = savedUrl;
-}
-
-const savedNickname = localStorage.getItem('nickname');
-if (savedNickname) {
-    nicknameInput.value = savedNickname;
-}
 
 function connectWebSocket() {
     const url = websocketUrlInput.value;
-    myNickname = nicknameInput.value; // Update nickname on connect
-
-    if (!url) {
-        appendMessage('System', 'Please enter a WebSocket URL.', 'received');
+    myNickname = nicknameInput.value;
+    if (!url || !myNickname) {
+        appendMessage('System', 'Please enter a nickname and WebSocket URL.', 'received');
         return;
     }
-    if (!myNickname) {
-        appendMessage('System', 'Please enter a nickname.', 'received');
-        return;
-    }
-
-    if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.close();
-    }
+    if (ws && ws.readyState === WebSocket.OPEN) ws.close();
 
     const connectionStatusDiv = document.getElementById('connectionStatus');
     const connectionSettingsDiv = document.querySelector('.connection-settings');
     const messageFormDiv = document.getElementById('messageForm');
 
-    ws = new WebSocket(url.replace('http://', 'ws://').replace('https://', 'wss://'));
+    ws = new WebSocket(url.replace(/^http/, 'ws'));
 
     ws.onopen = () => {
         console.log('Connected to WebSocket server');
         connectionStatusDiv.textContent = 'Connected';
         connectionStatusDiv.style.color = 'green';
-        connectionSettingsDiv.style.display = 'none';
-        messageFormDiv.style.display = 'flex';
-        mainTitle.style.display = 'none';
-        userListContainer.style.display = 'block';
-        appendMessage('System', `Connected to ${url}` , 'received');
-        localStorage.setItem('websocketUrl', url);
+        [connectionSettingsDiv, mainTitle, recentConnectionsContainer].forEach(el => el.style.display = 'none');
+        [messageFormDiv, userListContainer].forEach(el => el.style.display = 'flex');
+        saveRecentUrl(url);
         localStorage.setItem('nickname', myNickname);
-
-        ws.send(JSON.stringify({
-            type: 'set_nickname',
-            nickname: myNickname
-        }));
+        ws.send(JSON.stringify({ type: 'set_nickname', nickname: myNickname }));
     };
 
     ws.onmessage = (event) => {
-        console.log('Message from server:', event.data);
         try {
             const messageData = JSON.parse(event.data);
-            
             switch (messageData.type) {
-                case 'chat':
-                    appendMessage(messageData.sender, messageData.content, messageData.type, messageData.timestamp);
-                    break;
-                case 'system':
-                    if (messageData.content.startsWith('환영합니다,')) {
-                        myNickname = messageData.content.split(',')[1].split('님!')[0].trim();
-                    }
-                    appendMessage(null, messageData.content, messageData.type, messageData.timestamp);
-                    break;
-                case 'user_list':
-                    updateUserList(messageData.users);
-                    break;
-                case 'user_typing':
-                    if (messageData.nickname !== myNickname) {
-                        typingUsers.add(messageData.nickname);
-                        updateTypingIndicator();
-                    }
-                    break;
-                case 'user_stopped_typing':
-                    if (messageData.nickname !== myNickname) {
-                        typingUsers.delete(messageData.nickname);
-                        updateTypingIndicator();
-                    }
-                    break;
-                default:
-                    appendMessage('Server', event.data, 'received');
+                case 'chat': appendMessage(messageData.sender, messageData.content, messageData.type, messageData.timestamp); break;
+                case 'system': appendMessage(null, messageData.content, messageData.type, messageData.timestamp); break;
+                case 'user_list': updateUserList(messageData.users); break;
+                case 'user_typing': if (messageData.nickname !== myNickname) typingUsers.add(messageData.nickname); updateTypingIndicator(); break;
+                case 'user_stopped_typing': if (messageData.nickname !== myNickname) typingUsers.delete(messageData.nickname); updateTypingIndicator(); break;
+                default: appendMessage('Server', event.data, 'received');
             }
         } catch (e) {
             appendMessage('Server', event.data, 'received');
         }
     };
 
-    ws.onclose = () => {
-        console.log('Disconnected from WebSocket server.');
-        connectionStatusDiv.textContent = 'Disconnected';
-        connectionStatusDiv.style.color = 'red';
-        connectionSettingsDiv.style.display = 'flex';
-        messageFormDiv.style.display = 'none';
-        mainTitle.style.display = 'block';
-        userListContainer.style.display = 'none';
+    const handleDisconnect = (error) => {
+        console.log(error ? `WebSocket error: ${error}` : 'Disconnected from WebSocket server.');
+        connectionStatusDiv.textContent = error ? 'Error' : 'Disconnected';
+        connectionStatusDiv.style.color = error ? 'orange' : 'red';
+        [connectionSettingsDiv, mainTitle, recentConnectionsContainer].forEach(el => el.style.display = 'block');
+        [messageFormDiv, userListContainer].forEach(el => el.style.display = 'none');
         updateUserList([]);
         typingUsers.clear();
         updateTypingIndicator();
-        appendMessage('System', 'Disconnected from server.', 'received');
+        renderRecentConnections();
+        appendMessage('System', error ? 'WebSocket error occurred.' : 'Disconnected from server.', 'received');
     };
 
-    ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        connectionStatusDiv.textContent = 'Error';
-        connectionStatusDiv.style.color = 'orange';
-        connectionSettingsDiv.style.display = 'flex';
-        messageFormDiv.style.display = 'none';
-        mainTitle.style.display = 'block';
-        userListContainer.style.display = 'none';
-        updateUserList([]);
-        typingUsers.clear();
-        updateTypingIndicator();
-        appendMessage('System', 'WebSocket error occurred. Check console for details.', 'received');
-        ws.close(); 
-    };
+    ws.onclose = () => handleDisconnect(null);
+    ws.onerror = (e) => handleDisconnect(e);
 }
 
 function updateUserList(users) {
@@ -210,34 +203,25 @@ function updateUserList(users) {
 function appendMessage(sender, content, type = 'chat', timestamp = null) {
     const messagesDiv = document.getElementById('messages');
     const messageElement = document.createElement('div');
-
     const date = timestamp ? new Date(timestamp) : new Date();
     const timestampStr = `<span class="timestamp">${date.toLocaleTimeString()}</span>`;
 
     if (type === 'system') {
         messageElement.classList.add('system-message');
         messageElement.innerHTML = `<em>${content}</em>${timestampStr}`;
-    } else { // 'chat' type
+    } else {
         messageElement.classList.add('message');
-        if (sender === myNickname) {
-            messageElement.classList.add('my-message');
-        } else {
-            messageElement.classList.add('other-message');
-        }
-        
+        messageElement.classList.toggle('my-message', sender === myNickname);
+        messageElement.classList.toggle('other-message', sender !== myNickname);
         const messageContentDiv = document.createElement('div');
         messageContentDiv.classList.add('message-content');
-        
         const messageText = document.createElement('span');
         messageText.innerHTML = `<strong>${sender}:</strong> `;
         messageText.appendChild(document.createTextNode(content));
-
         messageContentDiv.appendChild(messageText);
         messageContentDiv.innerHTML += timestampStr;
-
         messageElement.appendChild(messageContentDiv);
     }
-
     messagesDiv.appendChild(messageElement);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
@@ -245,46 +229,16 @@ function appendMessage(sender, content, type = 'chat', timestamp = null) {
 messageForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const message = messageInput.value;
-    const currentNickname = nicknameInput.value;
-
-    if (message.startsWith('/nick ')) {
-        const newNickname = message.substring(6).trim();
-        if (newNickname) {
-            nicknameInput.value = newNickname;
-            localStorage.setItem('nickname', newNickname);
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                    type: 'set_nickname',
-                    nickname: newNickname
-                }));
-                appendMessage('System', `닉네임을 ${newNickname}으로 변경했습니다.`, 'sent');
-            } else {
-                appendMessage('System', '닉네임이 로컬에서 변경되었지만, 서버에 연결되어 있지 않습니다.', 'received');
-            }
-        } else {
-            appendMessage('System', '사용할 닉네임을 입력해주세요. 예: /nick 새로운닉네임', 'received');
-        }
-        messageInput.value = '';
-        messageInput.focus();
-        return;
-    }
-
-    if (message && ws && ws.readyState === WebSocket.OPEN) {
-        const messageToSend = JSON.stringify({
-            type: 'chat',
-            sender: currentNickname,
-            content: message
-        });
-        ws.send(messageToSend);
-        // Stop typing indicator after sending a message
+    if (!message) return;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'chat', content: message }));
         clearTimeout(typingTimer);
         isTyping = false;
         ws.send(JSON.stringify({ type: 'typing_stop' }));
-
         messageInput.value = '';
         messageInput.focus();
-    } else if (!ws || ws.readyState !== WebSocket.OPEN) {
-        appendMessage('System', 'Not connected to server. Please connect first.', 'received');
+    } else {
+        appendMessage('System', 'Not connected to server.', 'received');
     }
 });
 
