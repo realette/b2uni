@@ -110,30 +110,35 @@ const messageFormDiv = document.getElementById('messageForm');
 function appendMessage(sender, content, type = 'chat', timestamp = null) {
     const messagesDiv = document.getElementById('messages');
     const messageElement = document.createElement('div');
-    messageElement.classList.add('message');
 
-    let timestampStr = '';
-    if (timestamp) {
-        const date = new Date(timestamp);
-        timestampStr = `<span class="timestamp">${date.toLocaleTimeString()}</span>`;
-    }
+    const date = timestamp ? new Date(timestamp) : new Date();
+    const timestampStr = `<span class="timestamp">${date.toLocaleTimeString()}</span>`;
 
-    let messageContentHtml = ''; // New variable for the inner content
-    if (type === 'chat') {
-        messageContentHtml = `<strong>${sender}:</strong> ${content}`;
+    if (type === 'system') {
+        messageElement.classList.add('system-message');
+        messageElement.innerHTML = `<em>${content}</em>${timestampStr}`;
+    } else { // 'chat' type
+        messageElement.classList.add('message');
         if (sender === myNickname) {
             messageElement.classList.add('my-message');
         } else {
             messageElement.classList.add('other-message');
         }
-    } else if (type === 'system') {
-        messageContentHtml = `<em>${content}</em>`;
-        messageElement.classList.add('system-message');
+        
+        const messageContentDiv = document.createElement('div');
+        messageContentDiv.classList.add('message-content');
+        
+        // Create text node for content to prevent HTML injection
+        const messageText = document.createElement('span');
+        messageText.innerHTML = `<strong>${sender}:</strong> `;
+        messageText.appendChild(document.createTextNode(content));
+
+        messageContentDiv.appendChild(messageText);
+        messageContentDiv.innerHTML += timestampStr; // Append timestamp inside content
+
+        messageElement.appendChild(messageContentDiv);
     }
 
-    // Construct the final innerHTML for messageElement
-    messageElement.innerHTML = `<div class="message-content">${messageContentHtml}</div>${timestampStr}`;
-    console.log('Appending message:', { sender, content, type, timestamp, messageContentHtml, innerHTML: messageElement.innerHTML }); // Updated log
     messagesDiv.appendChild(messageElement);
     messagesDiv.scrollTop = messagesDiv.scrollHeight; // Auto-scroll to bottom
 }
