@@ -1,11 +1,13 @@
 const messagesDiv = document.getElementById('messages');
 const messageForm = document.getElementById('messageForm');
 const messageInput = document.getElementById('messageInput');
-const mainTitle = document.getElementById('mainTitle'); // Get the title element
+const mainTitle = document.getElementById('mainTitle');
 const themeToggle = document.getElementById('theme-toggle');
+const userListContainer = document.getElementById('user-list-container');
+const userList = document.getElementById('user-list');
+const userCount = document.getElementById('user-count');
 
 // WebSocket 서버 주소를 여기에 입력하세요.
-// 예: ws://localhost:8765 또는 wss://your-server.com/ws
 const websocketUrlInput = document.getElementById('websocketUrlInput');
 const connectButton = document.getElementById('connectButton');
 const nicknameInput = document.getElementById('nicknameInput');
@@ -62,15 +64,13 @@ function connectWebSocket() {
         return;
     }
 
-    // Close existing connection if any
     if (ws && ws.readyState === WebSocket.OPEN) {
         ws.close();
     }
 
-    
-const connectionStatusDiv = document.getElementById('connectionStatus');
-const connectionSettingsDiv = document.querySelector('.connection-settings'); // Use querySelector for class
-const messageFormDiv = document.getElementById('messageForm');
+    const connectionStatusDiv = document.getElementById('connectionStatus');
+    const connectionSettingsDiv = document.querySelector('.connection-settings');
+    const messageFormDiv = document.getElementById('messageForm');
 
     ws = new WebSocket(url.replace('http://', 'ws://').replace('https://', 'wss://'));
 
@@ -78,14 +78,14 @@ const messageFormDiv = document.getElementById('messageForm');
         console.log('Connected to WebSocket server');
         connectionStatusDiv.textContent = 'Connected';
         connectionStatusDiv.style.color = 'green';
-        connectionSettingsDiv.style.display = 'none'; // Hide connection settings
-        messageFormDiv.style.display = 'flex'; // Show message form
-        mainTitle.style.display = 'none'; // Hide the main title
+        connectionSettingsDiv.style.display = 'none';
+        messageFormDiv.style.display = 'flex';
+        mainTitle.style.display = 'none';
+        userListContainer.style.display = 'block'; // Show user list
         appendMessage('System', `Connected to ${url}` , 'received');
-        localStorage.setItem('websocketUrl', url); // Save URL to localStorage
-        localStorage.setItem('nickname', nickname); // Save nickname to localStorage
+        localStorage.setItem('websocketUrl', url);
+        localStorage.setItem('nickname', nickname);
 
-        // Send initial nickname to server
         ws.send(JSON.stringify({
             type: 'set_nickname',
             nickname: nickname
@@ -96,21 +96,20 @@ const messageFormDiv = document.getElementById('messageForm');
         console.log('Message from server:', event.data);
         try {
             const messageData = JSON.parse(event.data);
-            console.log('Parsed messageData:', messageData); // <--- ADD THIS LOG
-
+            
             if (messageData.type === 'chat') {
                 appendMessage(messageData.sender, messageData.content, messageData.type, messageData.timestamp);
             } else if (messageData.type === 'system') {
                 if (messageData.content.startsWith('환영합니다,')) {
                     myNickname = messageData.content.split(',')[1].split('님!')[0].trim();
-                    console.log('My nickname is:', myNickname);
                 }
                 appendMessage(null, messageData.content, messageData.type, messageData.timestamp);
-            } else { // Fallback for unknown types
+            } else if (messageData.type === 'user_list') {
+                updateUserList(messageData.users);
+            } else { 
                 appendMessage('Server', event.data, 'received');
             }
         } catch (e) {
-            // If not JSON, display as plain text
             appendMessage('Server', event.data, 'received');
         }
     };
@@ -119,23 +118,36 @@ const messageFormDiv = document.getElementById('messageForm');
         console.log('Disconnected from WebSocket server.');
         connectionStatusDiv.textContent = 'Disconnected';
         connectionStatusDiv.style.color = 'red';
-        connectionSettingsDiv.style.display = 'flex'; // Show connection settings
-        messageFormDiv.style.display = 'none'; // Hide message form
-        mainTitle.style.display = 'block'; // Show the main title
+        connectionSettingsDiv.style.display = 'flex';
+        messageFormDiv.style.display = 'none';
+        mainTitle.style.display = 'block';
+        userListContainer.style.display = 'none'; // Hide user list
+        updateUserList([]); // Clear user list
         appendMessage('System', 'Disconnected from server.', 'received');
-        // No automatic reconnect here, user needs to click connect again
     };
 
     ws.onerror = (error) => {
         console.error('WebSocket error:', error);
         connectionStatusDiv.textContent = 'Error';
         connectionStatusDiv.style.color = 'orange';
-        connectionSettingsDiv.style.display = 'flex'; // Show connection settings
-        messageFormDiv.style.display = 'none'; // Hide message form
-        mainTitle.style.display = 'block'; // Show the main title
+        connectionSettingsDiv.style.display = 'flex';
+        messageFormDiv.style.display = 'none';
+        mainTitle.style.display = 'block';
+        userListContainer.style.display = 'none'; // Hide user list
+        updateUserList([]); // Clear user list
         appendMessage('System', 'WebSocket error occurred. Check console for details.', 'received');
         ws.close(); 
     };
+}
+
+function updateUserList(users) {
+    userCount.textContent = users.length;
+    userList.innerHTML = ''; // Clear current list
+    users.forEach(user => {
+        const li = document.createElement('li');
+        li.textContent = user;
+        userList.appendChild(li);
+    });
 }
 
 function appendMessage(sender, content, type = 'chat', timestamp = null) {
@@ -159,31 +171,30 @@ function appendMessage(sender, content, type = 'chat', timestamp = null) {
         const messageContentDiv = document.createElement('div');
         messageContentDiv.classList.add('message-content');
         
-        // Create text node for content to prevent HTML injection
         const messageText = document.createElement('span');
         messageText.innerHTML = `<strong>${sender}:</strong> `;
         messageText.appendChild(document.createTextNode(content));
 
         messageContentDiv.appendChild(messageText);
-        messageContentDiv.innerHTML += timestampStr; // Append timestamp inside content
+        messageContentDiv.innerHTML += timestampStr;
 
         messageElement.appendChild(messageContentDiv);
     }
 
     messagesDiv.appendChild(messageElement);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight; // Auto-scroll to bottom
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
 messageForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const message = messageInput.value;
-    const currentNickname = nicknameInput.value; // Get current nickname
+    const currentNickname = nicknameInput.value;
 
     if (message.startsWith('/nick ')) {
         const newNickname = message.substring(6).trim();
         if (newNickname) {
             nicknameInput.value = newNickname;
-            localStorage.setItem('nickname', newNickname); // Save new nickname
+            localStorage.setItem('nickname', newNickname);
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({
                     type: 'set_nickname',
@@ -197,19 +208,19 @@ messageForm.addEventListener('submit', (e) => {
             appendMessage('System', '사용할 닉네임을 입력해주세요. 예: /nick 새로운닉네임', 'received');
         }
         messageInput.value = '';
-        messageInput.focus(); // Keep keyboard open
+        messageInput.focus();
         return;
     }
 
     if (message && ws && ws.readyState === WebSocket.OPEN) {
         const messageToSend = JSON.stringify({
             type: 'chat',
-            sender: currentNickname, // Include sender nickname
+            sender: currentNickname,
             content: message
         });
         ws.send(messageToSend);
         messageInput.value = '';
-        messageInput.focus(); // Keep keyboard open
+        messageInput.focus();
     } else if (!ws || ws.readyState !== WebSocket.OPEN) {
         appendMessage('System', 'Not connected to server. Please connect first.', 'received');
     }
