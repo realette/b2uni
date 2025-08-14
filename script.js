@@ -63,6 +63,7 @@ const connectionStatusDiv = document.getElementById('connectionStatus');
         console.log('Message from server:', event.data);
         try {
             const messageData = JSON.parse(event.data);
+            console.log('Parsed messageData:', messageData); // <--- ADD THIS LOG
 
             if (messageData.type === 'chat') {
                 appendMessage(messageData.sender, messageData.content, messageData.type, messageData.timestamp);
