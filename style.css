@@ -169,14 +169,16 @@ h1 {
     bottom: 0;
 }
 
-/* --- Theme Switcher --- */
+/* --- Top Controls --- */
 .controls-container {
     position: absolute;
     top: 20px;
     right: 20px;
+    display: flex;
+    gap: 10px;
 }
 
-#theme-toggle {
+#theme-toggle, #notification-toggle {
     background: none;
     border: 1px solid #ccc;
     border-radius: 50%;
@@ -190,8 +192,12 @@ h1 {
     transition: background-color 0.3s, color 0.3s, transform 0.3s;
 }
 
-#theme-toggle:hover {
+#theme-toggle:hover, #notification-toggle:hover {
     transform: scale(1.1);
+}
+
+#notification-toggle.enabled {
+    color: #28a745; /* Green when enabled */
 }
 
 /* --- User List --- */
@@ -290,6 +296,19 @@ h1 {
     font-size: 0.9em;
 }
 
+/* --- Mentions --- */
+.mention {
+    background-color: #edeef0;
+    font-weight: bold;
+    padding: 1px 5px;
+    border-radius: 4px;
+}
+
+.mention.self-mention {
+    background-color: #ffc107; /* Yellow */
+    color: #1f2328;
+}
+
 /* --- Dark Mode --- */
 body.dark-mode {
     background-color: #121212;
@@ -346,7 +365,8 @@ body.dark-mode .timestamp {
     color: #aaa;
 }
 
-body.dark-mode #theme-toggle {
+body.dark-mode #theme-toggle,
+body.dark-mode #notification-toggle {
     background-color: #333;
     border-color: #555;
     color: #fff;
@@ -376,4 +396,13 @@ body.dark-mode .recent-connection-item {
 
 body.dark-mode .recent-connection-item:hover {
     background-color: #2c2c2c;
+}
+
+body.dark-mode .mention {
+    background-color: #444c56;
+}
+
+body.dark-mode .mention.self-mention {
+    background-color: #ffc107;
+    color: #1f2328;
 }
