@@ -41,6 +41,8 @@ function connectWebSocket() {
 
     
 const connectionStatusDiv = document.getElementById('connectionStatus');
+const connectionSettingsDiv = document.querySelector('.connection-settings'); // Use querySelector for class
+const messageFormDiv = document.getElementById('messageForm');
 
     ws = new WebSocket(url.replace('http://', 'ws://').replace('https://', 'wss://'));
 
@@ -48,6 +50,8 @@ const connectionStatusDiv = document.getElementById('connectionStatus');
         console.log('Connected to WebSocket server');
         connectionStatusDiv.textContent = 'Connected';
         connectionStatusDiv.style.color = 'green';
+        connectionSettingsDiv.style.display = 'none'; // Hide connection settings
+        messageFormDiv.style.display = 'flex'; // Show message form
         appendMessage('System', `Connected to ${url}` , 'received');
         localStorage.setItem('websocketUrl', url); // Save URL to localStorage
         localStorage.setItem('nickname', nickname); // Save nickname to localStorage
@@ -86,6 +90,8 @@ const connectionStatusDiv = document.getElementById('connectionStatus');
         console.log('Disconnected from WebSocket server.');
         connectionStatusDiv.textContent = 'Disconnected';
         connectionStatusDiv.style.color = 'red';
+        connectionSettingsDiv.style.display = 'flex'; // Show connection settings
+        messageFormDiv.style.display = 'none'; // Hide message form
         appendMessage('System', 'Disconnected from server.', 'received');
         // No automatic reconnect here, user needs to click connect again
     };
@@ -94,6 +100,8 @@ const connectionStatusDiv = document.getElementById('connectionStatus');
         console.error('WebSocket error:', error);
         connectionStatusDiv.textContent = 'Error';
         connectionStatusDiv.style.color = 'orange';
+        connectionSettingsDiv.style.display = 'flex'; // Show connection settings
+        messageFormDiv.style.display = 'none'; // Hide message form
         appendMessage('System', 'WebSocket error occurred. Check console for details.', 'received');
         ws.close(); 
     };

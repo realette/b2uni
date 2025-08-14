@@ -113,6 +113,7 @@ h1 {
     color: #333; /* Dark text color */
     box-sizing: border-box; /* Include padding and border in the element's total width and height */
     min-height: 30px; /* Ensure message elements have some height */
+    line-height: 1.4; /* Add this for better line spacing */
 }
 
 .system-message {
