@@ -39,10 +39,15 @@ function connectWebSocket() {
         ws.close();
     }
 
-    ws = new WebSocket(url);
+    let myNickname = '';
+const connectionStatusDiv = document.getElementById('connectionStatus');
+
+    ws = new WebSocket(`ws://${location.host}`);
 
     ws.onopen = () => {
         console.log('Connected to WebSocket server');
+        connectionStatusDiv.textContent = 'Connected';
+        connectionStatusDiv.style.color = 'green';
         appendMessage('System', `Connected to ${url}` , 'received');
         localStorage.setItem('websocketUrl', url); // Save URL to localStorage
         localStorage.setItem('nickname', nickname); // Save nickname to localStorage
@@ -58,17 +63,15 @@ function connectWebSocket() {
         console.log('Message from server:', event.data);
         try {
             const messageData = JSON.parse(event.data);
-            if (messageData.type === 'system') {
-                let displayContent = messageData.content;
-                if (messageData.participant_count !== undefined) {
-                    displayContent += ` (현재 참가자 수: ${messageData.participant_count}명)`;
-                }
-                appendMessage('System', displayContent, 'received');
-            } else if (messageData.type === 'chat') {
-                appendMessage(messageData.sender, messageData.content, 'received');
-            } else if (messageData.type === 'nickname_changed') {
-                appendMessage('System', `${messageData.old_nickname}님이 ${messageData.new_nickname}으로 닉네임을 변경했습니다.`, 'received');
-            } else {
+            if (data.type === 'chat') {
+            appendMessage(data.sender, data.content, data.type, data.timestamp);
+        } else if (data.type === 'system') {
+            if (data.content.startsWith('환영합니다,')) { // Check for welcome message
+                myNickname = data.content.split(',')[1].split('님!')[0].trim();
+                console.log('My nickname is:', myNickname); // For debugging
+            }
+            appendMessage(null, data.content, data.type, data.timestamp); // System messages don't have a sender
+        }
                 // Fallback for unknown types
                 appendMessage('Server', event.data, 'received');
             }
@@ -80,22 +83,43 @@ function connectWebSocket() {
 
     ws.onclose = () => {
         console.log('Disconnected from WebSocket server.');
+        connectionStatusDiv.textContent = 'Disconnected';
+        connectionStatusDiv.style.color = 'red';
         appendMessage('System', 'Disconnected from server.', 'received');
         // No automatic reconnect here, user needs to click connect again
     };
 
     ws.onerror = (error) => {
         console.error('WebSocket error:', error);
+        connectionStatusDiv.textContent = 'Error';
+        connectionStatusDiv.style.color = 'orange';
         appendMessage('System', 'WebSocket error occurred. Check console for details.', 'received');
         ws.close(); 
     };
 }
 
-function appendMessage(sender, message, type) {
+function appendMessage(sender, content, type = 'chat', timestamp = null) {
+    const messagesDiv = document.getElementById('messages');
     const messageElement = document.createElement('div');
     messageElement.classList.add('message');
-    messageElement.classList.add(type);
-    messageElement.textContent = `${sender}: ${message}`;
+
+    let timestampStr = '';
+    if (timestamp) {
+        const date = new Date(timestamp);
+        timestampStr = `<span class="timestamp">${date.toLocaleTimeString()}</span>`;
+    }
+
+    if (type === 'chat') {
+        messageElement.innerHTML = `<strong>${sender}:</strong> ${content} ${timestampStr}`;
+        if (sender === myNickname) {
+            messageElement.classList.add('my-message');
+        } else {
+            messageElement.classList.add('other-message'); // Optional: for explicit styling of others' messages
+        }
+    } else if (type === 'system') {
+        messageElement.classList.add('system-message');
+        messageElement.innerHTML = `<em>${content}</em> ${timestampStr}`;
+    }
     messagesDiv.appendChild(messageElement);
     messagesDiv.scrollTop = messagesDiv.scrollHeight; // Auto-scroll to bottom
 }
