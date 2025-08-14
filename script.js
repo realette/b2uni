@@ -161,7 +161,6 @@ messageForm.addEventListener('submit', (e) => {
             content: message
         });
         ws.send(messageToSend);
-        appendMessage('You', message, 'chat');
         messageInput.value = '';
     } else if (!ws || ws.readyState !== WebSocket.OPEN) {
         appendMessage('System', 'Not connected to server. Please connect first.', 'received');
