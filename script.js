@@ -6,6 +6,7 @@ const themeToggle = document.getElementById('theme-toggle');
 const userListContainer = document.getElementById('user-list-container');
 const userList = document.getElementById('user-list');
 const userCount = document.getElementById('user-count');
+const typingIndicator = document.getElementById('typing-indicator');
 
 // WebSocket 서버 주소를 여기에 입력하세요.
 const websocketUrlInput = document.getElementById('websocketUrlInput');
@@ -13,6 +14,42 @@ const connectButton = document.getElementById('connectButton');
 const nicknameInput = document.getElementById('nicknameInput');
 
 let ws;
+let myNickname = nicknameInput.value;
+
+// --- TYPING INDICATOR LOGIC ---
+let typingTimer;
+let isTyping = false;
+const typingUsers = new Set();
+
+function updateTypingIndicator() {
+    if (typingUsers.size === 0) {
+        typingIndicator.textContent = '\xa0'; // Non-breaking space to maintain height
+    } else {
+        const users = Array.from(typingUsers);
+        if (users.length === 1) {
+            typingIndicator.textContent = `${users[0]} is typing...`;
+        } else if (users.length === 2) {
+            typingIndicator.textContent = `${users[0]} and ${users[1]} are typing...`;
+        } else {
+            typingIndicator.textContent = 'Several people are typing...';
+        }
+    }
+}
+
+messageInput.addEventListener('input', () => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        if (!isTyping) {
+            isTyping = true;
+            ws.send(JSON.stringify({ type: 'typing_start' }));
+        }
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => {
+            isTyping = false;
+            ws.send(JSON.stringify({ type: 'typing_stop' }));
+        }, 2000); // 2 seconds
+    }
+});
+// --- END TYPING INDICATOR ---
 
 // --- THEME SWITCHER LOGIC ---
 function setTheme(theme) {
@@ -53,13 +90,13 @@ if (savedNickname) {
 
 function connectWebSocket() {
     const url = websocketUrlInput.value;
-    const nickname = nicknameInput.value;
+    myNickname = nicknameInput.value; // Update nickname on connect
 
     if (!url) {
         appendMessage('System', 'Please enter a WebSocket URL.', 'received');
         return;
     }
-    if (!nickname) {
+    if (!myNickname) {
         appendMessage('System', 'Please enter a nickname.', 'received');
         return;
     }
@@ -81,14 +118,14 @@ function connectWebSocket() {
         connectionSettingsDiv.style.display = 'none';
         messageFormDiv.style.display = 'flex';
         mainTitle.style.display = 'none';
-        userListContainer.style.display = 'block'; // Show user list
+        userListContainer.style.display = 'block';
         appendMessage('System', `Connected to ${url}` , 'received');
         localStorage.setItem('websocketUrl', url);
-        localStorage.setItem('nickname', nickname);
+        localStorage.setItem('nickname', myNickname);
 
         ws.send(JSON.stringify({
             type: 'set_nickname',
-            nickname: nickname
+            nickname: myNickname
         }));
     };
 
@@ -97,17 +134,33 @@ function connectWebSocket() {
         try {
             const messageData = JSON.parse(event.data);
             
-            if (messageData.type === 'chat') {
-                appendMessage(messageData.sender, messageData.content, messageData.type, messageData.timestamp);
-            } else if (messageData.type === 'system') {
-                if (messageData.content.startsWith('환영합니다,')) {
-                    myNickname = messageData.content.split(',')[1].split('님!')[0].trim();
-                }
-                appendMessage(null, messageData.content, messageData.type, messageData.timestamp);
-            } else if (messageData.type === 'user_list') {
-                updateUserList(messageData.users);
-            } else { 
-                appendMessage('Server', event.data, 'received');
+            switch (messageData.type) {
+                case 'chat':
+                    appendMessage(messageData.sender, messageData.content, messageData.type, messageData.timestamp);
+                    break;
+                case 'system':
+                    if (messageData.content.startsWith('환영합니다,')) {
+                        myNickname = messageData.content.split(',')[1].split('님!')[0].trim();
+                    }
+                    appendMessage(null, messageData.content, messageData.type, messageData.timestamp);
+                    break;
+                case 'user_list':
+                    updateUserList(messageData.users);
+                    break;
+                case 'user_typing':
+                    if (messageData.nickname !== myNickname) {
+                        typingUsers.add(messageData.nickname);
+                        updateTypingIndicator();
+                    }
+                    break;
+                case 'user_stopped_typing':
+                    if (messageData.nickname !== myNickname) {
+                        typingUsers.delete(messageData.nickname);
+                        updateTypingIndicator();
+                    }
+                    break;
+                default:
+                    appendMessage('Server', event.data, 'received');
             }
         } catch (e) {
             appendMessage('Server', event.data, 'received');
@@ -121,8 +174,10 @@ function connectWebSocket() {
         connectionSettingsDiv.style.display = 'flex';
         messageFormDiv.style.display = 'none';
         mainTitle.style.display = 'block';
-        userListContainer.style.display = 'none'; // Hide user list
-        updateUserList([]); // Clear user list
+        userListContainer.style.display = 'none';
+        updateUserList([]);
+        typingUsers.clear();
+        updateTypingIndicator();
         appendMessage('System', 'Disconnected from server.', 'received');
     };
 
@@ -133,8 +188,10 @@ function connectWebSocket() {
         connectionSettingsDiv.style.display = 'flex';
         messageFormDiv.style.display = 'none';
         mainTitle.style.display = 'block';
-        userListContainer.style.display = 'none'; // Hide user list
-        updateUserList([]); // Clear user list
+        userListContainer.style.display = 'none';
+        updateUserList([]);
+        typingUsers.clear();
+        updateTypingIndicator();
         appendMessage('System', 'WebSocket error occurred. Check console for details.', 'received');
         ws.close(); 
     };
@@ -142,7 +199,7 @@ function connectWebSocket() {
 
 function updateUserList(users) {
     userCount.textContent = users.length;
-    userList.innerHTML = ''; // Clear current list
+    userList.innerHTML = '';
     users.forEach(user => {
         const li = document.createElement('li');
         li.textContent = user;
@@ -219,6 +276,11 @@ messageForm.addEventListener('submit', (e) => {
             content: message
         });
         ws.send(messageToSend);
+        // Stop typing indicator after sending a message
+        clearTimeout(typingTimer);
+        isTyping = false;
+        ws.send(JSON.stringify({ type: 'typing_stop' }));
+
         messageInput.value = '';
         messageInput.focus();
     } else if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -226,8 +288,8 @@ messageForm.addEventListener('submit', (e) => {
     }
 });
 
+userListContainer.addEventListener('click', () => {
+    userListContainer.classList.toggle('expanded');
+});
+
 connectButton.addEventListener('click', connectWebSocket);
-
-
-// Global variable to store my nickname
-let myNickname = nicknameInput.value;

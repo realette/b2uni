@@ -200,8 +200,15 @@ h1 {
     border-radius: 4px;
     padding: 5px 10px;
     margin-bottom: 10px;
-    max-height: 100px; /* Limit height */
-    overflow-y: auto;
+    max-height: 80px; /* Default height for a few lines */
+    overflow-y: hidden; /* Hide overflow in collapsed state */
+    cursor: pointer;
+    transition: max-height 0.4s ease-in-out;
+}
+
+#user-list-container.expanded {
+    max-height: 300px; /* Height when expanded */
+    overflow-y: auto; /* Show scrollbar when expanded and needed */
 }
 
 #user-list-container h3 {
@@ -213,7 +220,7 @@ h1 {
     padding: 0;
     margin: 0;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: wrap; /* Reverted to wrap */
     gap: 8px;
 }
 
@@ -222,6 +229,16 @@ h1 {
     color: #333;
     padding: 3px 8px;
     border-radius: 12px;
+    font-size: 0.9em;
+}
+
+/* --- Typing Indicator --- */
+.typing-indicator {
+    min-height: 20px; /* Reserve space to prevent layout shifts */
+    font-style: italic;
+    color: #888;
+    padding-left: 10px;
+    margin-bottom: 5px;
     font-size: 0.9em;
 }
 
@@ -294,4 +311,8 @@ body.dark-mode #user-list-container {
 body.dark-mode #user-list li {
     background-color: #555;
     color: #e0e0e0;
+}
+
+body.dark-mode .typing-indicator {
+    color: #aaa;
 }
