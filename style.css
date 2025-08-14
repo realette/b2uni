@@ -108,7 +108,8 @@ h1 {
     border-radius: 15px;
     max-width: 70%;
     word-wrap: break-word;
-    word-break: break-word; /* Add this for more robust word breaking */
+    word-break: break-word;
+    overflow-wrap: break-word; /* Add this for even more robust breaking */
     position: relative; /* For timestamp positioning */
     /* Ensure visibility */
     color: #333; /* Dark text color */
