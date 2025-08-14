@@ -39,7 +39,7 @@ function connectWebSocket() {
         ws.close();
     }
 
-    let myNickname = '';
+    
 const connectionStatusDiv = document.getElementById('connectionStatus');
 
     ws = new WebSocket(url.replace('http://', 'ws://').replace('https://', 'wss://'));
