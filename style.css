@@ -122,13 +122,14 @@ h1 {
 }
 
 .message-content {
-    padding: 8px 12px; /* Apply padding here */
-    word-wrap: break-word;
-    word-break: break-word;
-    overflow-wrap: break-word;
+    padding: 8px 12px;
+    word-wrap: break-word; /* Keep for compatibility */
+    word-break: break-all; /* More aggressive breaking */
+    overflow-wrap: break-word; /* Keep for compatibility */
     /* Ensure it takes up available space within .message */
     flex-grow: 1; /* If .message becomes a flex container */
     min-width: 0; /* Prevent flex item from overflowing */
+    max-width: 100%; /* Ensure it doesn't exceed its parent's width */
 }
 
 .system-message {
