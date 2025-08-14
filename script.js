@@ -78,7 +78,7 @@ const typingUsers = new Set();
 
 function updateTypingIndicator() {
     if (typingUsers.size === 0) {
-        typingIndicator.textContent = '\xa0';
+        typingIndicator.textContent = 'xa0';
     } else {
         const users = Array.from(typingUsers);
         typingIndicator.textContent = users.length === 1 ? `${users[0]} is typing...` : `${users.slice(0, 2).join(', ')} and others are typing...`;
@@ -199,24 +199,25 @@ function connectWebSocket() {
 
     ws.onmessage = (event) => {
         try {
-            const messageData = JSON.parse(event.data.trim()); // Added .trim()
-            console.log('[Debug]', 'Received message type:', messageData.type, ' (typeof ', typeof messageData.type, ')'); // Debug log
+            const messageData = JSON.parse(event.data);
             switch (messageData.type) {
                 case 'chat':
-                    // --- DEBUGGING LOG ---
-                    console.log('--- Mention Notification Check ---');
-                    console.log('Received mentions:', messageData.mentions);
-                    console.log('My current nickname:', myNickname);
-                    console.log('Is my nickname in mentions?:', messageData.mentions ? messageData.mentions.includes(myNickname) : 'N/A');
-                    console.log('Is document focused?:', document.hasFocus());
-                    console.log('Notification permission:', Notification.permission);
-                    // --- END DEBUGGING LOG ---
-
                     if (messageData.mentions && messageData.mentions.includes(myNickname)) {
                         showNotification(`Mention from ${messageData.sender}`, messageData.content);
                     }
                     appendMessage(messageData.sender, messageData.content, messageData.type, messageData.timestamp, messageData.mentions);
                     break;
+                case 'system': appendMessage(null, messageData.content, messageData.type, messageData.timestamp); break;
+                case 'user_list': updateUserList(messageData.users); break;
+                case 'user_typing': if (messageData.nickname !== myNickname) typingUsers.add(messageData.nickname); updateTypingIndicator(); break;
+                case 'user_stopped_typing': if (messageData.nickname !== myNickname) typingUsers.delete(messageData.nickname); updateTypingIndicator(); break;
+                default: appendMessage('Server', event.data, 'received');
+            }
+        }
+        catch (e) {
+            appendMessage('Server', event.data, 'received');
+        }
+    };
 
     const handleDisconnect = (error) => {
         console.log(error ? `WebSocket error: ${error}` : 'Disconnected from WebSocket server.');
@@ -266,7 +267,7 @@ function appendMessage(sender, content, type = 'chat', timestamp = null, mention
         const messageText = document.createElement('span');
         
         const sanitizedContent = document.createTextNode(content).textContent;
-        const highlightedContent = sanitizedContent.replace(/@([\w#]+)/g, (match, nickname) => {
+        const highlightedContent = sanitizedContent.replace(/@([w#]+)/g, (match, nickname) => {
             const isSelf = nickname === myNickname;
             return `<span class="mention ${isSelf ? 'self-mention' : ''}">${match}</span>`;
         });
@@ -286,7 +287,7 @@ messageForm.addEventListener('submit', (e) => {
     if (!message) return;
     if (message.startsWith('/')) { handleSlashCommand(message); return; }
     if (ws && ws.readyState === WebSocket.OPEN) {
-        const mentions = [...message.matchAll(/@([\w#]+)/g)].map(match => match[1]);
+        const mentions = [...message.matchAll(/@([w#]+)/g)].map(match => match[1]);
         ws.send(JSON.stringify({ type: 'chat', content: message, mentions: mentions }));
         clearTimeout(typingTimer);
         isTyping = false;
