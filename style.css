@@ -104,7 +104,7 @@ h1 {
 
 /* Consolidated styling for messages */
 .message {
-    padding: 8px 12px;
+    padding: 0; /* Set to 0 or adjust as needed */
     border-radius: 15px;
     max-width: 70%;
     word-wrap: break-word;
@@ -116,6 +116,19 @@ h1 {
     box-sizing: border-box; /* Include padding and border in the element's total width and height */
     min-height: 30px; /* Ensure message elements have some height */
     line-height: 1.4; /* Add this for better line spacing */
+    display: flex; /* Make .message a flex container */
+    flex-direction: column; /* Stack content and timestamp */
+    align-items: flex-start; /* Default alignment */
+}
+
+.message-content {
+    padding: 8px 12px; /* Apply padding here */
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    /* Ensure it takes up available space within .message */
+    flex-grow: 1; /* If .message becomes a flex container */
+    min-width: 0; /* Prevent flex item from overflowing */
 }
 
 .system-message {

@@ -118,21 +118,22 @@ function appendMessage(sender, content, type = 'chat', timestamp = null) {
         timestampStr = `<span class="timestamp">${date.toLocaleTimeString()}</span>`;
     }
 
-    let messageHtml = ''; // Declare a variable to hold the HTML string
-
+    let messageContentHtml = ''; // New variable for the inner content
     if (type === 'chat') {
-        messageHtml = `<strong>${sender}:</strong> ${content} ${timestampStr}`;
+        messageContentHtml = `<strong>${sender}:</strong> ${content}`;
         if (sender === myNickname) {
             messageElement.classList.add('my-message');
         } else {
-            messageElement.classList.add('other-message'); // Optional: for explicit styling of others' messages
+            messageElement.classList.add('other-message');
         }
     } else if (type === 'system') {
+        messageContentHtml = `<em>${content}</em>`;
         messageElement.classList.add('system-message');
-        messageHtml = `<em>${content}</em> ${timestampStr}`;
     }
-    messageElement.innerHTML = messageHtml; // Assign the HTML string
-    console.log('Appending message:', { sender, content, type, timestamp, messageHtml, innerHTML: messageElement.innerHTML }); // <--- ADD THIS LOG
+
+    // Construct the final innerHTML for messageElement
+    messageElement.innerHTML = `<div class="message-content">${messageContentHtml}</div>${timestampStr}`;
+    console.log('Appending message:', { sender, content, type, timestamp, messageContentHtml, innerHTML: messageElement.innerHTML }); // Updated log
     messagesDiv.appendChild(messageElement);
     messagesDiv.scrollTop = messagesDiv.scrollHeight; // Auto-scroll to bottom
 }
