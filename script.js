@@ -165,7 +165,11 @@ function renderRecentConnections() {
 function connectWebSocket() {
     const url = websocketUrlInput.value;
     myNickname = nicknameInput.value;
-    if (!url || !myNickname) { return; } // Silently fail on auto-reconnect
+    console.log('[Debug]', `connectWebSocket called. URL: ${url}, Nickname: ${myNickname}`); // Debug log
+    if (!url || !myNickname) { 
+        console.log('[Debug]', 'Connection aborted: URL or Nickname is missing.');
+        return; 
+    } // Silently fail on auto-reconnect
     
     // Don't try to connect if already connecting or open
     if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
