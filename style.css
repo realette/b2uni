@@ -108,6 +108,7 @@ h1 {
     border-radius: 15px;
     max-width: 70%;
     word-wrap: break-word;
+    word-break: break-word; /* Add this for more robust word breaking */
     position: relative; /* For timestamp positioning */
     /* Ensure visibility */
     color: #333; /* Dark text color */
@@ -120,7 +121,7 @@ h1 {
     text-align: center;
     font-style: italic;
     color: #888;
-    margin-bottom: 10px;
+    margin: 0; /* Ensure no extra margins interfere with gap */
 }
 
 /* Styling for messages sent by the current user */
