@@ -42,7 +42,7 @@ function connectWebSocket() {
     let myNickname = '';
 const connectionStatusDiv = document.getElementById('connectionStatus');
 
-    ws = new WebSocket(`ws://${location.host}`);
+    ws = new WebSocket(url.replace('http://', 'ws://').replace('https://', 'wss://'));
 
     ws.onopen = () => {
         console.log('Connected to WebSocket server');
